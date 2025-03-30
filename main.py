@@ -2,9 +2,13 @@ from fastapi import FastAPI, File, Form, UploadFile
 from fastapi.responses import JSONResponse
 import shutil, os, zipfile, pandas as pd
 from tempfile import TemporaryDirectory
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+api_key = os.getenv("API_KEY")
 
 app = FastAPI()
-
 
 @app.post("/api/")
 async def solve_question(
@@ -12,6 +16,8 @@ async def solve_question(
         file: UploadFile = File(None)
 ):
     print(f"Received question: {question}")
+    print(f"Using API Key: {api_key[:8]}...")  # Shortened debug print
+
     if file:
         print(f"Received file: {file.filename}")
 
@@ -36,7 +42,6 @@ async def solve_question(
                         # Read CSV and extract value from "answer" column
                         df = pd.read_csv(csv_path)
                         if "answer" in df.columns:
-                            # Just return the first non-null value
                             answer = df["answer"].dropna().iloc[0]
                             return JSONResponse(content={"answer": str(answer)})
                         else:
@@ -46,4 +51,6 @@ async def solve_question(
             else:
                 return JSONResponse(content={"answer": "Uploaded file is not a ZIP."})
 
-    return JSONResponse(content={"answer": f"Dummy answer for: {question}"})
+    # If no file, return a dummy answer
+    answer = f"I don't have a file. You asked: {question}"
+    return JSONResponse(content={"answer": answer})
